@@ -1,0 +1,36 @@
+{
+ "variants": {
+  "facing=north,standing=true": {
+   "model": "soundworks:block/record_box_standing",
+   "y": 0
+  },
+  "facing=north,standing=false": {
+   "model": "soundworks:block/record_box_lying",
+   "y": 0
+  },
+  "facing=east,standing=true": {
+   "model": "soundworks:block/record_box_standing",
+   "y": 90
+  },
+  "facing=east,standing=false": {
+   "model": "soundworks:block/record_box_lying",
+   "y": 90
+  },
+  "facing=south,standing=true": {
+   "model": "soundworks:block/record_box_standing",
+   "y": 180
+  },
+  "facing=south,standing=false": {
+   "model": "soundworks:block/record_box_lying",
+   "y": 180
+  },
+  "facing=west,standing=true": {
+   "model": "soundworks:block/record_box_standing",
+   "y": 270
+  },
+  "facing=west,standing=false": {
+   "model": "soundworks:block/record_box_lying",
+   "y": 270
+  }
+ }
+}

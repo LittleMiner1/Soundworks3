@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " A ",
+    "PNP",
+    "PRP"
+  ],
+  "key": {
+    "A": "soundworks:antenna",
+    "P": "#minecraft:planks",
+    "N": "minecraft:note_block",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "soundworks:speaker",
+    "count": 1
+  }
+}

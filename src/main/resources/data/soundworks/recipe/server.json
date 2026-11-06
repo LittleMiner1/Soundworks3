@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " A ",
+    "IBI",
+    "ILI"
+  ],
+  "key": {
+    "A": "soundworks:antenna",
+    "B": "soundworks:record_box",
+    "L": "minecraft:redstone_lamp",
+    "I": "minecraft:iron_ingot"
+  },
+  "result": {
+    "id": "soundworks:server",
+    "count": 1
+  }
+}

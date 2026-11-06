@@ -1,0 +1,36 @@
+{
+ "variants": {
+  "wall=false,facing=north": {
+   "model": "soundworks:block/terminal_table",
+   "y": 0
+  },
+  "wall=true,facing=north": {
+   "model": "soundworks:block/terminal_wall",
+   "y": 0
+  },
+  "wall=false,facing=east": {
+   "model": "soundworks:block/terminal_table",
+   "y": 90
+  },
+  "wall=true,facing=east": {
+   "model": "soundworks:block/terminal_wall",
+   "y": 90
+  },
+  "wall=false,facing=south": {
+   "model": "soundworks:block/terminal_table",
+   "y": 180
+  },
+  "wall=true,facing=south": {
+   "model": "soundworks:block/terminal_wall",
+   "y": 180
+  },
+  "wall=false,facing=west": {
+   "model": "soundworks:block/terminal_table",
+   "y": 270
+  },
+  "wall=true,facing=west": {
+   "model": "soundworks:block/terminal_wall",
+   "y": 270
+  }
+ }
+}

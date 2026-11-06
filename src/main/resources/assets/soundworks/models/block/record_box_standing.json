@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "soundworks:block/record_box_side",
+  "down": "soundworks:block/record_box_top",
+  "up": "soundworks:block/record_box_top",
+  "north": "soundworks:block/record_box_front_standing",
+  "east": "soundworks:block/record_box_side",
+  "south": "soundworks:block/record_box_side",
+  "west": "soundworks:block/record_box_side"
+ }
+}

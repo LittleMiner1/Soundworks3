@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "PPP",
+    "S S",
+    "PPP"
+  ],
+  "key": {
+    "P": "#minecraft:wooden_slabs",
+    "S": "minecraft:stick"
+  },
+  "result": {
+    "id": "soundworks:record_box",
+    "count": 1
+  }
+}
