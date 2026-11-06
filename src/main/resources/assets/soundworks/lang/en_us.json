@@ -77,5 +77,7 @@
   "gui.soundworks.msg.copying": "Copying ...",
   "gui.soundworks.songs": "%s song(s)",
   "gui.soundworks.no_songs": "No songs found",
-  "gui.soundworks.no_disc_radio": "Nothing playing"
+  "gui.soundworks.no_disc_radio": "Nothing playing",
+  "gui.soundworks.artist": "Artist",
+  "gui.soundworks.song_title": "Title"
 }

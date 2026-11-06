@@ -127,12 +127,13 @@ public final class Net {
 		@Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 	}
 
-	/** Client -> server: scroll position and search text of the open record box menu. */
-	public record BoxView(int offset, String query) implements CustomPacketPayload {
+	/** Client -> server: scroll position and artist/title filter of the open record box menu. */
+	public record BoxView(int offset, String artist, String title) implements CustomPacketPayload {
 		public static final Type<BoxView> TYPE = new Type<>(SoundworksMod.id("box_view"));
 		public static final StreamCodec<ByteBuf, BoxView> CODEC = StreamCodec.composite(
 			ByteBufCodecs.VAR_INT, BoxView::offset,
-			ByteBufCodecs.STRING_UTF8, BoxView::query,
+			ByteBufCodecs.STRING_UTF8, BoxView::artist,
+			ByteBufCodecs.STRING_UTF8, BoxView::title,
 			BoxView::new);
 		@Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 	}
@@ -244,6 +245,10 @@ public final class Net {
 		PayloadTypeRegistry.clientboundPlay().register(JukeboxSync.TYPE, JukeboxSync.CODEC);
 	}
 
+	private static String cut(String s) {
+		return s == null ? "" : s.length() > 64 ? s.substring(0, 64) : s;
+	}
+
 	private static final Map<String, ByteArrayOutputStream> UPLOADS = new ConcurrentHashMap<>();
 
 	public static void initServer() {
@@ -306,7 +311,7 @@ public final class Net {
 		// Record box: scrolling / searching
 		ServerPlayNetworking.registerGlobalReceiver(BoxView.TYPE, (p, ctx) -> {
 			if (ctx.player().containerMenu instanceof RecordBoxMenu m) {
-				m.setView(p.offset(), p.query().length() > 64 ? p.query().substring(0, 64) : p.query());
+				m.setView(p.offset(), cut(p.artist()), cut(p.title()));
 			}
 		});
 

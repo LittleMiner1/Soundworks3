@@ -4,22 +4,30 @@ import dev.soundworks.menu.RecordBoxMenu;
 import dev.soundworks.net.Net;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 
-/** Record box (and the whole wall of touching boxes): 54-slot window with scroll buttons and a search field. */
+/** Record box (and the whole wall of touching boxes): 54-slot window, mouse wheel scrolling, artist and title filter. */
 public class RecordBoxScreen extends EditContainerScreen<RecordBoxMenu> {
-	private EditBox search;
-	private String lastQuery = "";
+	private EditBox artistBox, titleBox;
+	private String lastArtist = "", lastTitle = "";
 
 	public RecordBoxScreen(RecordBoxMenu menu, Inventory inv, Component title) {
 		super(menu, inv, title, 176, 240);
 	}
 
 	private void view(int offset) {
-		ClientPlayNetworking.send(new Net.BoxView(Math.max(0, offset), search.getValue()));
+		ClientPlayNetworking.send(new Net.BoxView(Math.max(0, offset), artistBox.getValue(), titleBox.getValue()));
+	}
+
+	private void filterChanged() {
+		String a = artistBox.getValue(), t = titleBox.getValue();
+		if (!a.equals(lastArtist) || !t.equals(lastTitle)) {
+			lastArtist = a;
+			lastTitle = t;
+			view(0);
+		}
 	}
 
 	@Override
@@ -27,22 +35,14 @@ public class RecordBoxScreen extends EditContainerScreen<RecordBoxMenu> {
 		super.init();
 		titleLabelY = 10000;
 		inventoryLabelY = 10000;
-		search = edit(Gui.field(font, leftPos + 8, topPos + 18, 80, 14, Component.translatable("gui.soundworks.search"),
-			lastQuery, 64, null));
-		search.setHint(Component.translatable("gui.soundworks.search"));
-		search.setResponder(text -> {
-			if (!text.equals(lastQuery)) {
-				lastQuery = text;
-				ClientPlayNetworking.send(new Net.BoxView(0, text));
-			}
-		});
-		String[] labels = {"<<", "<", ">", ">>"};
-		int[] steps = {-54, -9, 9, 54};
-		for (int i = 0; i < 4; i++) {
-			final int step = steps[i];
-			addRenderableWidget(Button.builder(Component.literal(labels[i]), b -> view(menu.offset() + step))
-				.bounds(leftPos + 92 + i * 19, topPos + 18, 18, 14).build());
-		}
+		artistBox = edit(Gui.field(font, leftPos + 8, topPos + 18, 76, 14, Component.translatable("gui.soundworks.artist"),
+			lastArtist, 64, null));
+		artistBox.setHint(Component.translatable("gui.soundworks.artist"));
+		artistBox.setResponder(text -> filterChanged());
+		titleBox = edit(Gui.field(font, leftPos + 88, topPos + 18, 80, 14, Component.translatable("gui.soundworks.song_title"),
+			lastTitle, 64, null));
+		titleBox.setHint(Component.translatable("gui.soundworks.song_title"));
+		titleBox.setResponder(text -> filterChanged());
 	}
 
 	@Override

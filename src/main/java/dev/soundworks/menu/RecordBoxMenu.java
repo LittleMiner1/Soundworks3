@@ -25,7 +25,7 @@ public class RecordBoxMenu extends BaseMenu {
 	private final WindowContainer window;
 	private final ContainerData data = new SimpleContainerData(4);
 	private int offset = 0;
-	private String query = "";
+	private String artistQuery = "", titleQuery = "";
 
 	/** Client constructor. */
 	public RecordBoxMenu(int id, Inventory inv, BlockPos pos) {
@@ -52,26 +52,32 @@ public class RecordBoxMenu extends BaseMenu {
 		}
 		addPlayerSlots(inv, 8, PLAYER_Y);
 		addDataSlots(data);
-		if (box != null) setView(0, "");
+		if (box != null) setView(0, "", "");
 	}
 
 	/** Visible entries (matches of the search, or all slots) and the current scroll offset. */
 	public int total() { return (data.get(0) << 15) | data.get(1); }
 	public int offset() { return (data.get(2) << 15) | data.get(3); }
 
-	/** Server: recompute which storage slots the window shows. */
-	public void setView(int newOffset, String newQuery) {
+	/** Server: recompute which storage slots the window shows (artist and title filters are both optional, both must match). */
+	public void setView(int newOffset, String newArtist, String newTitle) {
 		if (box == null) return;
-		query = newQuery == null ? "" : newQuery.strip().toLowerCase(Locale.ROOT);
+		artistQuery = newArtist == null ? "" : newArtist.strip().toLowerCase(Locale.ROOT);
+		titleQuery = newTitle == null ? "" : newTitle.strip().toLowerCase(Locale.ROOT);
+		boolean filtered = !artistQuery.isEmpty() || !titleQuery.isEmpty();
 		List<Integer> visible = new ArrayList<>();
 		int n = box.size();
 		for (int i = 0; i < n; i++) {
-			if (query.isEmpty()) {
+			if (!filtered) {
 				visible.add(i);
-			} else {
-				ItemStack s = box.get(i);
-				if (!s.isEmpty() && label(s).contains(query)) visible.add(i);
+				continue;
 			}
+			ItemStack s = box.get(i);
+			if (s.isEmpty()) continue;
+			DiscData d = s.get(ModRegistry.DISC_DATA);
+			String artist = d == null || d.artist() == null ? "" : d.artist().toLowerCase(Locale.ROOT);
+			String title = d != null ? d.title().toLowerCase(Locale.ROOT) : s.getHoverName().getString().toLowerCase(Locale.ROOT);
+			if (artist.contains(artistQuery) && title.contains(titleQuery)) visible.add(i);
 		}
 		int maxOffset = visible.size() <= WindowContainer.SIZE ? 0 : ((visible.size() - 1) / 9 - 5) * 9;
 		offset = Math.max(0, Math.min(newOffset - Math.floorMod(newOffset, 9), maxOffset));
@@ -82,12 +88,6 @@ public class RecordBoxMenu extends BaseMenu {
 		data.set(1, visible.size() & 0x7FFF);
 		data.set(2, (offset >> 15) & 0x7FFF);
 		data.set(3, offset & 0x7FFF);
-	}
-
-	private static String label(ItemStack s) {
-		DiscData d = s.get(ModRegistry.DISC_DATA);
-		String text = d != null ? d.display() : s.getHoverName().getString();
-		return text.toLowerCase(Locale.ROOT);
 	}
 
 	@Override
@@ -110,7 +110,7 @@ public class RecordBoxMenu extends BaseMenu {
 				}
 			}
 			if (!placed) return ItemStack.EMPTY;
-			setView(offset, query);
+			setView(offset, artistQuery, titleQuery);
 		}
 		if (stack.isEmpty()) slot.setByPlayer(ItemStack.EMPTY);
 		else slot.setChanged();

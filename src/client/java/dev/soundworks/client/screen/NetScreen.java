@@ -39,7 +39,7 @@ public class NetScreen extends Screen {
 	private EditBox ip, password, search, freq;
 	private final Button[] rows = new Button[ROWS];
 	private Button upButton, downButton;
-	private SettingSlider volumeSlider;
+	private SettingSlider volumeSlider, speedSlider;
 
 	public NetScreen(BlockPos pos, boolean radio) {
 		super(Component.translatable(radio ? "block.soundworks.radio" : "block.soundworks.terminal"));
@@ -140,7 +140,10 @@ public class NetScreen extends Screen {
 			addRenderableWidget(Button.builder(Component.translatable("gui.soundworks.stop"),
 				b -> ClientPlayNetworking.send(new Net.DeviceAction(pos, Controllable.ACTION_TOGGLE, 0f)))
 				.bounds(l + 8, t + 196, 60, 18).build());
-			volumeSlider = addRenderableWidget(new SettingSlider(l + 72, t + 196, 200, 18, "gui.soundworks.volume",
+			speedSlider = addRenderableWidget(new SettingSlider(l + 72, t + 196, 98, 18, "gui.soundworks.speed",
+				PlaybackState.SPEED_MIN, PlaybackState.SPEED_MAX, 0.01f, 0.02f, r == null ? 1f : r.ps.speed,
+				v -> ClientPlayNetworking.send(new Net.DeviceAction(pos, Controllable.ACTION_SPEED, v))));
+			volumeSlider = addRenderableWidget(new SettingSlider(l + 174, t + 196, 98, 18, "gui.soundworks.volume",
 				PlaybackState.VOLUME_MIN, PlaybackState.VOLUME_MAX, 0.01f, 0.04f, r == null ? 1f : r.ps.volume,
 				v -> ClientPlayNetworking.send(new Net.DeviceAction(pos, Controllable.ACTION_VOLUME, v))));
 			freq = addRenderableWidget(Gui.field(font, l + 8, t + 218, 196, 16, Component.translatable("gui.soundworks.speaker_ip"),
@@ -180,6 +183,7 @@ public class NetScreen extends Screen {
 		super.removed();
 		if (current == this) current = null;
 		if (volumeSlider != null) volumeSlider.flush(true);
+		if (speedSlider != null) speedSlider.flush(true);
 	}
 
 	@Override
@@ -199,6 +203,10 @@ public class NetScreen extends Screen {
 		if (volumeSlider != null && r != null) {
 			volumeSlider.syncFrom(r.ps.volume);
 			volumeSlider.flush(false);
+		}
+		if (speedSlider != null && r != null) {
+			speedSlider.syncFrom(r.ps.speed);
+			speedSlider.flush(false);
 		}
 		super.extractRenderState(g, mouseX, mouseY, delta);
 		int l = left(), t = top();

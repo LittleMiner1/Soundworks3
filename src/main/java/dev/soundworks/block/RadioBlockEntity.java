@@ -92,6 +92,7 @@ public class RadioBlockEntity extends NetNodeBlockEntity implements Controllable
 		if (level == null) return;
 		switch (action) {
 			case ACTION_TOGGLE -> ps.stop();
+			case ACTION_SPEED -> ps.setSpeed(PlaybackState.clampSpeed(value), level.getGameTime());
 			case ACTION_VOLUME -> ps.volume = PlaybackState.clampVolume(value);
 			default -> { return; }
 		}

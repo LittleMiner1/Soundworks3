@@ -39,50 +39,56 @@ public final class ClientAudio implements Hooks.Audio {
 		return p;
 	}
 
-	// ---- Speakers: one player per frequency at the nearest loaded speaker ----
+	// ---- Speakers: ONE player per frequency, so senders and speakers can never echo each other ----
 	private static final double SENDER_FULL = 8.0, SENDER_FADE = 56.0;
 	private static final double SPEAKER_FULL = 24.0, SPEAKER_FADE = 72.0;
-	private final Map<String, PlaybackState> speakerStates = new HashMap<>();
-	private final Map<String, Double> curBest = new HashMap<>();
-	private final Map<String, BlockPos> curPos = new HashMap<>();
-	private final Map<String, Double> prevBest = new HashMap<>();
+
+	/** The loudest source (sender or speaker) of a frequency for this client tick. */
+	private record Src(BlockPos pos, double full, double fade, double score) {}
+
+	private final Map<String, PlaybackState> speakerStates = new HashMap<>(); // from the server (SpeakerSync)
+	private final Map<String, PlaybackState> senderStates = new HashMap<>();  // loaded senders, refilled every tick
+	private final Map<String, Src> best = new HashMap<>();
+	private Set<String> active = new HashSet<>();
 
 	private static long speakerKey(String freq) {
 		return 0x7E00000000000000L ^ freq.hashCode();
 	}
 
-	/** A sender (turntable, jukebox, radio). It is muted when a speaker of its frequency is closer to the player. */
+	private void offer(String freq, BlockPos pos, double full, double fade) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.player == null) return;
+		double dist = Math.sqrt(mc.player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5));
+		double score = Math.max(0.0, 1.0 - Math.max(0.0, dist - full) / fade) - dist * 1e-6;
+		Src cur = best.get(freq);
+		if (cur == null || score > cur.score()) best.put(freq, new Src(pos, full, fade, score));
+	}
+
+	/**
+	 * A sender (turntable, jukebox, radio). Without a frequency it plays by itself. With a frequency it does not
+	 * play on its own: it is just one more place the shared player of that frequency can come from.
+	 */
 	@Override
 	public void tick(long key, BlockPos pos, PlaybackState st, long gameTime, String freq) {
-		boolean muted = false;
-		Minecraft mc = Minecraft.getInstance();
-		if (freq != null && !freq.isEmpty() && mc.player != null) {
-			Double speakerDist = prevBest.get(freq);
-			if (speakerDist != null) {
-				muted = speakerDist < mc.player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
-			}
+		if (freq == null || freq.isEmpty()) {
+			play(key, pos, st, gameTime, SENDER_FULL, SENDER_FADE, false);
+			return;
 		}
-		play(key, pos, st, gameTime, SENDER_FULL, SENDER_FADE, muted);
+		stop(key);
+		if (st.playing) senderStates.put(freq, st);
+		offer(freq, pos, SENDER_FULL, SENDER_FADE);
 	}
 
 	/** Called every client tick by each loaded speaker that has a frequency. */
 	@Override
 	public void speakerTick(String freq, BlockPos pos) {
-		Minecraft mc = Minecraft.getInstance();
-		if (mc.player == null) return;
-		double d = mc.player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
-		Double best = curBest.get(freq);
-		if (best == null || d < best) {
-			curBest.put(freq, d);
-			curPos.put(freq, pos);
-		}
+		offer(freq, pos, SPEAKER_FULL, SPEAKER_FADE);
 	}
 
 	/** Server -> client: what a frequency is playing right now. */
 	public void onSpeakerSync(Net.SpeakerSync s) {
 		if (!s.playing() || s.hash().isEmpty()) {
 			speakerStates.remove(s.freq());
-			stop(speakerKey(s.freq()));
 			return;
 		}
 		PlaybackState st = speakerStates.computeIfAbsent(s.freq(), k -> new PlaybackState());
@@ -97,18 +103,23 @@ public final class ClientAudio implements Hooks.Audio {
 		st.playing = true;
 	}
 
-	/** Once per client tick, after all speakers have reported: plays each frequency at its nearest speaker. */
+	/** Once per client tick, after all senders and speakers have reported: plays each frequency exactly once. */
 	public void flushSpeakers(long gameTime) {
-		for (var e : speakerStates.entrySet()) {
-			BlockPos p = curPos.get(e.getKey());
-			long key = speakerKey(e.getKey());
-			if (p == null) stop(key);
-			else play(key, p, e.getValue(), gameTime, SPEAKER_FULL, SPEAKER_FADE, false);
+		Set<String> freqs = new HashSet<>(speakerStates.keySet());
+		freqs.addAll(senderStates.keySet());
+		for (String f : freqs) {
+			Src src = best.get(f);
+			PlaybackState st = senderStates.containsKey(f) ? senderStates.get(f) : speakerStates.get(f);
+			long key = speakerKey(f);
+			if (src == null || st == null) stop(key);
+			else play(key, src.pos(), st, gameTime, src.full(), src.fade(), false);
 		}
-		prevBest.clear();
-		prevBest.putAll(curBest);
-		curBest.clear();
-		curPos.clear();
+		for (String f : active) {
+			if (!freqs.contains(f)) stop(speakerKey(f));
+		}
+		active = freqs;
+		senderStates.clear();
+		best.clear();
 	}
 
 	private void play(long key, BlockPos pos, PlaybackState st, long gameTime, double full, double fade, boolean muted) {
@@ -170,9 +181,9 @@ public final class ClientAudio implements Hooks.Audio {
 		vanillaPos.clear();
 		vanillaStates.clear();
 		speakerStates.clear();
-		curBest.clear();
-		curPos.clear();
-		prevBest.clear();
+		senderStates.clear();
+		best.clear();
+		active = new HashSet<>();
 	}
 
 	/** Incoming download chunk from the server. */
