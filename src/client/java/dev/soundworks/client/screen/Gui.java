@@ -20,7 +20,17 @@ final class Gui {
 	static EditBox field(Font font, int x, int y, int w, int h, Component label, String value, int max, Predicate<String> filter) {
 		EditBox b = new EditBox(font, x, y, w, h, label);
 		b.setMaxLength(max);
-		if (filter != null) b.setFilter(filter);
+		if (filter != null) {
+			// EditBox#setFilter no longer exists: remove unwanted characters after every change instead
+			b.setResponder(text -> {
+				StringBuilder clean = new StringBuilder();
+				for (int i = 0; i < text.length(); i++) {
+					String c = String.valueOf(text.charAt(i));
+					if (filter.test(c)) clean.append(c);
+				}
+				if (clean.length() != text.length()) b.setValue(clean.toString());
+			});
+		}
 		b.setValue(value == null ? "" : value);
 		return b;
 	}
